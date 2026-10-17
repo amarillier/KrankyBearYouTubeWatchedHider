@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { width: 300px; margin: 0; padding: 14px; font: 13px/1.4 system-ui, sans-serif; color: #222; }
+    h1 { font-size: 15px; margin: 0 0 12px; }
+    label.row { display: flex; align-items: center; justify-content: space-between; margin: 10px 0; }
+    input[type=range] { width: 100%; }
+    .muted { color: #666; font-size: 12px; }
+    .buttons { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    button { padding: 5px 10px; cursor: pointer; }
+    #status { margin-top: 8px; min-height: 1.4em; }
+  </style>
+</head>
+<body>
+  <h1>YouTube Watched Hider</h1>
+
+  <label class="row"><span>Hide watched videos</span><input type="checkbox" id="enabled"></label>
+  <label class="row"><span>Show on-page toggle button</span><input type="checkbox" id="showButton"></label>
+
+  <label class="row"><span>Show tracked channels on Home page</span><input type="checkbox" id="showStripOnHome"></label>
+
+  <div>Count as watched at <b><span id="thresholdValue"></span>%</b> progress</div>
+  <input type="range" id="threshold" min="1" max="100" step="1">
+
+  <p class="muted" id="stats"></p>
+
+  <label class="row">
+    <b>Tracked channels</b>
+    <select id="channelSort" title="Order of tracked channels">
+      <option value="manual">Manual (drag)</option>
+      <option value="az">A &ndash; Z</option>
+      <option value="za">Z &ndash; A</option>
+      <option value="unwatched">Most unwatched</option>
+    </select>
+  </label>
+  <ul id="channels" style="margin: 6px 0; padding-left: 0; list-style: none;"></ul>
+
+  <div class="buttons">
+    <button id="import" title="Restore a backup from this extension, or a Google Takeout watch-history.json">Import&hellip;</button>
+    <button id="export" title="Save settings, tracked channels and watched videos to one file">Export backup</button>
+    <button id="clear">Clear memory</button>
+  </div>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+  <div id="status" class="muted"></div>
+  <p class="muted" style="margin-bottom:0"><a href="#" id="help">How it works</a></p>
+
+  <script src="sort.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

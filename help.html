@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube Watched Hider - How it works</title>
+  <style>
+    :root {
+      --bg: #fff; --fg: #1a1a1a; --muted: #5f6368; --card: #f4f5f7; --accent: #cc0000; --link: #065fd4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #181818; --fg: #eaeaea; --muted: #a0a4a8; --card: #242424; --link: #3ea6ff; }
+    }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { margin: 0 0 4px; font-size: 28px; }
+    h2 { margin: 36px 0 8px; font-size: 20px; border-bottom: 2px solid var(--accent); padding-bottom: 4px; }
+    p, li { margin: 6px 0; }
+    .lead { color: var(--muted); margin-bottom: 24px; }
+    .note { background: var(--card); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 4px; }
+    code, kbd { background: var(--card); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+    a { color: var(--link); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>YouTube Watched Hider</h1>
+  <p class="lead">Hide what you've already watched, and keep a short list of the channels you actually follow.</p>
+
+  <h2>Quick start</h2>
+  <ol>
+    <li>Browse YouTube as normal. Videos you've watched are hidden automatically.</li>
+    <li>Use the red/grey button at the bottom-left of YouTube, or the toolbar icon, to turn hiding on or off.</li>
+    <li>Open a channel you care about and click <b>+ Track channel</b> (bottom-right). It then appears on your Subscriptions page.</li>
+  </ol>
+
+  <h2>Hiding watched videos</h2>
+  <p>It works on Home, Subscriptions, channel pages, search results and the watch-page sidebar. It never hides anything on your <code>History</code> page.</p>
+  <p>The bottom-left button shows the current state and counts, for example <code>Hiding watched &middot; 12 hidden &middot; 8 shown</code>. Counts cover the videos loaded so far on that page, so they grow as you scroll. Click it to switch hiding on or off.</p>
+  <p>A video counts as watched when its progress reaches the <b>threshold</b> in the toolbar popup (default 10%). Progress comes from:</p>
+  <ul>
+    <li>YouTube's own red progress bar on thumbnails, which follows your account across devices.</li>
+    <li>Your own playback on watch pages and Shorts (ads and hover previews are ignored).</li>
+    <li>Videos you mark yourself (below), and anything imported from a backup or Google Takeout.</li>
+  </ul>
+  <p>Once the extension has seen a video's progress it remembers it, even if YouTube later stops showing the bar.</p>
+
+  <h2>Marking a video as watched</h2>
+  <p>Hover over a thumbnail and click <b>&#10003; Watched</b>. The video is stored as fully watched and hides straight away if hiding is on. An <b>Undo</b> link appears for a few seconds. This is useful for videos YouTube shows as only 15&ndash;20% watched even though you finished them.</p>
+
+  <h2>Tracked channels</h2>
+  <p>Click <b>+ Track channel</b> on any channel page to add it, and click it again to remove it. Your normal YouTube subscriptions are not changed.</p>
+  <p>On the Subscriptions page (and optionally the Home page) a strip appears at the top with one chip per tracked channel and the number of unwatched videos. Click a chip to open that channel's Videos tab, where hiding already applies. The &#8635; button refreshes the counts.</p>
+  <p>The same list, with counts and links, is in the toolbar popup.</p>
+  <div class="note"><b>About the counts:</b> they are based on each channel's 15 most recent uploads. A badge such as <code>15+</code> means all of those 15 are unwatched and there may be more. Counts refresh at most every 15 minutes.</div>
+
+  <h2>Sorting and ordering</h2>
+  <p>In the popup, choose <b>Manual</b>, <b>A &ndash; Z</b>, <b>Z &ndash; A</b> or <b>Most unwatched</b>. The popup list and the YouTube strip both follow your choice. To set your own order, drag the &#9776; handle on a row. Dragging switches to Manual and keeps the order you see.</p>
+
+  <h2>Backup, moving to another computer</h2>
+  <p><b>Export backup</b> saves your settings, tracked channels and watched videos to one JSON file. <b>Import&hellip;</b> on another computer merges it in: watched videos keep the higher progress, missing channels are added, and the settings in the file are applied.</p>
+  <p>Import also accepts a Google Takeout <code>watch-history.json</code> (Takeout &rarr; YouTube &rarr; History, JSON format) to mark everything you've ever watched. <b>Clear memory</b> forgets the remembered videos, though YouTube's own progress bars are still detected.</p>
+
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><b>Nothing hides:</b> check the toggle is on, then refresh the YouTube tab. YouTube changes its page layout from time to time, which can break the tile detection.</li>
+    <li><b>Counts look too high:</b> videos you watched elsewhere only count once the extension has seen their progress. Import Takeout, or open the channel page once.</li>
+    <li><b>The + button doesn't appear:</b> it shows only on a channel's own page. Give it a second after the page loads.</li>
+    <li><b>After updating the extension:</b> reload it on <code>chrome://extensions</code> and refresh your YouTube tabs.</li>
+  </ul>
+
+  <h2>Privacy</h2>
+  <p>Everything is stored locally in your browser. The extension reads YouTube pages you visit and fetches the public RSS feed of each tracked channel from youtube.com. It does not use an API key, has no server, and sends your data nowhere.</p>
+</main>
+</body>
+</html>

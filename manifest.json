@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "KrankyBear YouTube Watched Hider",
+  "version": "1.0.0",
+  "description": "Hide YouTube videos you've already watched, mark videos as watched, and track favourite channels with unwatched counts.",
+  "options_page": "help.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "unlimitedStorage"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "YouTube Watched Hider",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["sort.js", "content.js", "channels.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
