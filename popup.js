@@ -1,4 +1,4 @@
-const DEFAULTS = { enabled: true, threshold: 10, showButton: true, showStripOnHome: false, channelSort: 'manual' };
+const DEFAULTS = { enabled: true, threshold: 10, showButton: true, showStripOnHome: false, channelSort: 'manual', includeShorts: false, hideShorts: false, hideReleases: false };
 const BACKUP_KIND = 'kb-youtube-hider-backup';
 const $ = (id) => document.getElementById(id);
 
@@ -14,12 +14,15 @@ async function refreshStats() {
 }
 
 async function renderChannels() {
-  const { channels = [], feedCache = {}, watched = {}, settings: stored } =
-    await chrome.storage.local.get(['channels', 'feedCache', 'watched', 'settings']);
+  const { channels = [], feedCache = {}, shortsCache = {}, watched = {}, settings: stored } =
+    await chrome.storage.local.get(['channels', 'feedCache', 'shortsCache', 'watched', 'settings']);
   const threshold = Math.max(1, (stored && stored.threshold) || DEFAULTS.threshold);
+  const includeShorts = !!(stored && stored.includeShorts);
+  const statsOf = (c) =>
+    KBSort.channelStats(feedCache[c.id], watched, threshold, shortsCache, includeShorts);
   const countOf = (c) => {
-    const entry = feedCache[c.id];
-    return entry ? entry.videos.filter((id) => (watched[id] || 0) < threshold).length : null;
+    const stats = statsOf(c);
+    return stats ? stats.unwatched.length : null;
   };
   const ordered = KBSort.sortChannels(channels, (stored && stored.channelSort) || 'manual', countOf);
   const list = $('channels');
@@ -33,7 +36,7 @@ async function renderChannels() {
   }
   for (const c of ordered) {
     const li = document.createElement('li');
-    li.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin:3px 0;';
+    li.style.cssText = 'display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin:3px 0;';
     li.draggable = true;
     li.dataset.id = c.id;
     li.addEventListener('dragstart', (e) => {
@@ -72,15 +75,46 @@ async function renderChannels() {
     name.style.cssText = 'flex:1;color:inherit;';
 
     const badge = document.createElement('span');
-    const n = countOf(c);
-    if (n !== null) {
-      const total = feedCache[c.id].videos.length;
-      const capped = n > 0 && n === total; // every recent upload unwatched; may be more
+    const stats = statsOf(c);
+    const n = stats ? stats.unwatched.length : null;
+    let details = null;
+    if (stats) {
+      const capped = n > 0 && n === stats.eligible; // every recent upload unwatched; may be more
       badge.textContent = capped ? `${n}+` : String(n);
-      badge.title = `${n} unwatched of the latest ${total} uploads`;
+      badge.title = `${n} unwatched of the latest ${stats.eligible} uploads. Click to see which.`;
       badge.style.cssText =
-        'margin:0 8px;padding:1px 7px;border-radius:10px;font-size:12px;color:#fff;' +
+        'margin:0 8px;padding:1px 7px;border-radius:10px;font-size:12px;color:#fff;cursor:pointer;' +
         `background:${n ? '#cc0000' : '#999'};`;
+
+      // Click the badge to list exactly which videos are being counted.
+      details = document.createElement('div');
+      details.style.cssText = 'display:none;flex-basis:100%;margin:2px 0 6px 22px;font-size:12px;';
+      const info = feedCache[c.id].info || {};
+      for (const id of stats.unwatched) {
+        const row = document.createElement('div');
+        const link = document.createElement('a');
+        link.href = `https://www.youtube.com/watch?v=${id}`;
+        link.target = '_blank';
+        link.textContent = (info[id] && info[id].title) || id;
+        link.style.color = 'inherit';
+        row.append(link, ` ${(info[id] && info[id].published) || ''}${shortsCache[id] ? ' [Short]' : ''}`);
+        details.appendChild(row);
+      }
+      if (stats.skippedShorts) {
+        const note = document.createElement('div');
+        note.className = 'muted';
+        note.textContent = `${stats.skippedShorts} unwatched Shorts not counted.`;
+        details.appendChild(note);
+      }
+      if (!n && !stats.skippedShorts) {
+        const none = document.createElement('div');
+        none.className = 'muted';
+        none.textContent = 'Nothing unwatched in the latest uploads.';
+        details.appendChild(none);
+      }
+      badge.addEventListener('click', () => {
+        details.style.display = details.style.display === 'none' ? 'block' : 'none';
+      });
     } else {
       badge.textContent = '…';
       badge.title = 'Counts load when you open the Subscriptions page';
@@ -97,6 +131,7 @@ async function renderChannels() {
       renderChannels();
     });
     li.append(name, badge, remove);
+    if (details) li.appendChild(details);
     name.draggable = false;
     list.appendChild(li);
   }
@@ -114,6 +149,9 @@ async function init() {
   $('showButton').checked = settings.showButton;
   $('showStripOnHome').checked = settings.showStripOnHome;
   $('channelSort').value = settings.channelSort;
+  $('includeShorts').checked = settings.includeShorts;
+  $('hideShorts').checked = settings.hideShorts;
+  $('hideReleases').checked = settings.hideReleases;
   $('threshold').value = settings.threshold;
   $('thresholdValue').textContent = settings.threshold;
   refreshStats();
@@ -122,6 +160,13 @@ async function init() {
   $('enabled').addEventListener('change', (e) => { settings.enabled = e.target.checked; save(); });
   $('showButton').addEventListener('change', (e) => { settings.showButton = e.target.checked; save(); });
   $('showStripOnHome').addEventListener('change', (e) => { settings.showStripOnHome = e.target.checked; save(); });
+  $('hideShorts').addEventListener('change', (e) => { settings.hideShorts = e.target.checked; save(); });
+  $('hideReleases').addEventListener('change', (e) => { settings.hideReleases = e.target.checked; save(); });
+  $('includeShorts').addEventListener('change', async (e) => {
+    settings.includeShorts = e.target.checked;
+    await save();
+    renderChannels();
+  });
   $('channelSort').addEventListener('change', async (e) => {
     settings.channelSort = e.target.value;
     await save();

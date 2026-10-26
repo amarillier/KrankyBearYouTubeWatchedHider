@@ -20,7 +20,15 @@
   ].join(',');
 
   const HIDE_CLASS = 'kb-watched-hidden';
-  const DEFAULTS = { enabled: true, threshold: 10, showButton: true };
+  const DEFAULTS = { enabled: true, threshold: 10, showButton: true, hideShorts: false, hideReleases: false };
+
+  // Shelves that carry a heading, and the tabs on a channel page, are matched by their visible
+  // English label (YouTube gives them no stable class), so this part is English-only.
+  const SHELF_SELECTOR = 'ytd-shelf-renderer, ytd-rich-shelf-renderer, ytd-reel-shelf-renderer';
+  const SHELF_SECTION_SELECTOR = 'ytd-item-section-renderer, ytd-rich-section-renderer';
+  const UI_HIDE_CLASS = 'kb-ui-hidden';
+  const SHORTS_LABEL = /^shorts$/i;
+  const RELEASES_LABEL = /^(latest )?releases$/i;
 
   let settings = { ...DEFAULTS };
   let watched = {}; // videoId -> highest progress percentage seen (0-100)
@@ -29,10 +37,16 @@
   let scanTimer = null;
   let button = null;
   let lastTrackSave = 0;
+  let observer = null;
+  let scanInterval = null;
+  let missedScans = 0; // consecutive scans that found video links but no tiles
 
   // ---- storage -------------------------------------------------------------
 
-  function remember(id, pct) {
+  // watched[id] === -1 means "marked unwatched": YouTube's own bar is ignored for it, but
+  // real playback (fromPlayback) replaces the override.
+  function remember(id, pct, fromPlayback) {
+    if (watched[id] === -1 && !fromPlayback) return;
     if (pct > (watched[id] || 0)) {
       watched[id] = pct;
       pending[id] = pct;
@@ -94,9 +108,40 @@
     return Number.isFinite(pct) ? Math.min(100, Math.round(pct)) : 0;
   }
 
+  function isShortTile(tile) {
+    return !!tile.querySelector('a[href^="/shorts/"]');
+  }
+
+  // Tabs and headed shelves that are hidden by label rather than by tag.
+  function applyLabelHiding(onHistory) {
+    const hideShorts = settings.hideShorts && !onHistory;
+    const want = new Set();
+    if (hideShorts || settings.hideReleases) {
+      const matches = (label) =>
+        (hideShorts && SHORTS_LABEL.test(label)) || (settings.hideReleases && RELEASES_LABEL.test(label));
+      for (const tab of document.querySelectorAll('yt-tab-shape')) {
+        if (matches((tab.getAttribute('tab-title') || tab.textContent).trim())) want.add(tab);
+      }
+      for (const shelf of document.querySelectorAll(SHELF_SELECTOR)) {
+        const title = shelf.querySelector('#title');
+        if (title && matches(title.textContent.trim())) {
+          want.add(shelf.closest(SHELF_SECTION_SELECTOR) || shelf);
+        }
+      }
+    }
+    for (const el of document.querySelectorAll(`.${UI_HIDE_CLASS}`)) {
+      if (!want.has(el)) el.classList.remove(UI_HIDE_CLASS);
+    }
+    for (const el of want) el.classList.add(UI_HIDE_CLASS);
+    document.documentElement.classList.toggle('kb-no-shorts', hideShorts);
+  }
+
   function scan() {
     scanTimer = null;
-    const suppress = !settings.enabled || location.pathname.startsWith('/feed/history');
+    const onHistory = location.pathname.startsWith('/feed/history');
+    const suppress = !settings.enabled || onHistory;
+    const hideShorts = settings.hideShorts && !onHistory;
+    let tileCount = 0;
     const threshold = Math.max(1, settings.threshold);
     let hiddenCount = 0;
     let shownCount = 0;
@@ -106,30 +151,45 @@
       if (tile.parentElement && tile.parentElement.closest(TILE_SELECTOR)) continue;
       const id = videoIdOf(tile);
       if (!id) continue;
+      tileCount++;
+
+      const short = isShortTile(tile);
+      tile.classList.toggle('kb-shorts-hidden', hideShorts && short);
+      if (hideShorts && short) continue;
 
       remember(id, progressOf(tile));
       const isWatched = (watched[id] || 0) >= threshold;
       const hide = !suppress && isWatched;
       tile.classList.toggle(HIDE_CLASS, hide);
-      ensureMarkButton(tile, id);
-      tile.classList.toggle('kb-can-mark', !isWatched);
+      ensureMarkButton(tile, id, isWatched);
       if (isWatched) watchedCount++;
       if (hide) hiddenCount++;
       else shownCount++;
     }
-    updateButton(hiddenCount, shownCount, watchedCount);
+    applyLabelHiding(onHistory);
+
+    // Video links on the page but no recognised tiles: the selectors have probably gone stale.
+    // Links with a list= are playlist rows, which aren't tiles, so they don't count.
+    if (tileCount === 0 && document.querySelectorAll('a[href*="/watch?v="]:not([href*="list="])').length >= 5) {
+      missedScans++;
+    } else {
+      missedScans = 0;
+    }
+    const stale = missedScans >= 2;
+    if (missedScans === 2) console.warn('[YouTube Watched Hider] No video tiles recognised; YouTube may have changed its layout.');
+    updateButton(hiddenCount, shownCount, watchedCount, stale);
   }
 
   // ---- manual "mark as watched" -------------------------------------------
 
-  // Set (or with pct 0, clear) a video's progress directly, allowing it to go down.
+  // Set a video's progress directly, allowing it to go down. 0 clears it; -1 marks it unwatched.
   async function setWatched(id, pct) {
-    if (pct > 0) watched[id] = pct;
+    if (pct !== 0) watched[id] = pct;
     else delete watched[id];
     delete pending[id];
     try {
       const { watched: current = {} } = await chrome.storage.local.get('watched');
-      if (pct > 0) current[id] = pct;
+      if (pct !== 0) current[id] = pct;
       else delete current[id];
       await chrome.storage.local.set({ watched: current });
     } catch (e) {
@@ -138,26 +198,28 @@
     scheduleScan();
   }
 
-  function ensureMarkButton(tile, id) {
+  function ensureMarkButton(tile, id, isWatched) {
     tile.classList.add('kb-tile');
     let btn = tile.querySelector(':scope > .kb-mark');
     if (!btn) {
       btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'kb-mark';
-      btn.textContent = '✓ Watched';
-      btn.title = 'Mark this video as fully watched';
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         const markId = btn.dataset.videoId;
+        const unmark = btn.dataset.mode === 'unmark';
         const previous = watched[markId] || 0;
-        setWatched(markId, 100);
-        showToast('Marked as watched', () => setWatched(markId, previous));
+        setWatched(markId, unmark ? -1 : 100);
+        showToast(unmark ? 'Marked as unwatched' : 'Marked as watched', () => setWatched(markId, previous));
       });
       tile.appendChild(btn);
     }
     btn.dataset.videoId = id; // YouTube reuses tile elements for different videos
+    btn.dataset.mode = isWatched ? 'unmark' : 'mark';
+    btn.textContent = isWatched ? '✗ Unwatch' : '✓ Watched';
+    btn.title = isWatched ? 'Mark this video as unwatched' : 'Mark this video as fully watched';
   }
 
   let toast = null;
@@ -184,7 +246,19 @@
   }
 
   function scheduleScan() {
+    if (!chrome.runtime || !chrome.runtime.id) {
+      teardown(); // extension was reloaded; this script is orphaned
+      return;
+    }
+    if (document.hidden) return; // catches up on visibilitychange
     if (!scanTimer) scanTimer = setTimeout(scan, 150);
+  }
+
+  function teardown() {
+    if (observer) observer.disconnect();
+    clearInterval(scanInterval);
+    document.removeEventListener('yt-navigate-finish', scheduleScan);
+    observer = null;
   }
 
   // ---- playback tracking ---------------------------------------------------
@@ -217,7 +291,7 @@
     if (!id) return;
     const pct = Math.round((video.currentTime / video.duration) * 100);
     if (pct >= 1) {
-      remember(id, Math.min(100, pct));
+      remember(id, Math.min(100, pct), true);
       if (force && flushTimer) {
         clearTimeout(flushTimer);
         flush();
@@ -229,6 +303,7 @@
   document.addEventListener('pause', (e) => track(e, true), true);
   document.addEventListener('ended', (e) => track(e, true), true);
   document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') scheduleScan();
     if (document.visibilityState === 'hidden' && flushTimer) {
       clearTimeout(flushTimer);
       flush();
@@ -243,7 +318,7 @@
 
   // ---- on-page toggle ------------------------------------------------------
 
-  function updateButton(hiddenCount, shownCount, watchedCount) {
+  function updateButton(hiddenCount, shownCount, watchedCount, stale) {
     if (!settings.showButton) {
       if (button) button.remove();
       button = null;
@@ -260,8 +335,11 @@
       });
       document.body.appendChild(button);
     }
-    button.classList.toggle('kb-on', settings.enabled);
-    button.textContent = settings.enabled
+    button.classList.toggle('kb-on', settings.enabled && !stale);
+    button.classList.toggle('kb-warn', !!stale);
+    button.textContent = stale
+      ? "⚠ Can't find videos on this page, YouTube's layout may have changed"
+      : settings.enabled
       ? `Hiding watched · ${hiddenCount} hidden · ${shownCount} shown`
       : `Showing all · ${shownCount} shown (${watchedCount} watched)`;
     button.title = 'Click to toggle hiding of watched videos';
@@ -274,13 +352,14 @@
     settings = { ...DEFAULTS, ...stored.settings };
     watched = stored.watched || {};
 
-    new MutationObserver(scheduleScan).observe(document.documentElement, {
+    observer = new MutationObserver(scheduleScan);
+    observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
     });
     document.addEventListener('yt-navigate-finish', scheduleScan);
     // Progress bars can be filled in after a tile is inserted; catch those too.
-    setInterval(scheduleScan, 3000);
+    scanInterval = setInterval(scheduleScan, 3000);
     scan();
   }
 

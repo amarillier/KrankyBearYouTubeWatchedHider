@@ -8,7 +8,9 @@ No API key, no account, no server. Everything is stored locally in your browser.
 
 - Hide watched videos on Home, Subscriptions, channel pages, search and the watch-page sidebar, with a one-click on/off toggle.
 - Detects watched videos from YouTube's own progress bars, your playback, manual marks, and an optional Google Takeout import.
-- Hover a thumbnail and click **Watched** to mark a video as fully watched (with Undo).
+- Hover a thumbnail and click **Watched** to mark a video as fully watched (with Undo), or **Unwatch** to clear a video that was counted by mistake.
+- Optionally hide Shorts (shelves, tiles, tab) and channel Releases (tab, shelf). English YouTube only for the tab and shelf matching.
+- `Alt+Shift+H` toggles hiding. The on-page button turns orange if YouTube's layout changes and no videos can be recognised.
 - Track channels and see unwatched counts on the Subscriptions page (optionally Home). Sort A-Z, Z-A, most unwatched, or drag into your own order.
 - Backup and restore of settings, channels and watched videos. Imports merge, so you can move between computers without overwriting either side.
 
@@ -27,8 +29,8 @@ To update, pull or download the new files, click the reload arrow on the extensi
 
 ## Limitations
 
-- Tracked-channel counts use each channel's 15 most recent uploads (from its public RSS feed). `15+` means all 15 are unwatched.
-- YouTube changes its page markup from time to time. If tiles stop hiding, the selectors at the top of `content.js` (`TILE_SELECTOR`, `PROGRESS_SELECTOR`) are the place to look.
+- Tracked-channel counts use each channel's 15 most recent uploads (from its public RSS feed). `15+` means all 15 are unwatched. Shorts are excluded from the counts by default (the feed doesn't flag them, so the extension checks each video's `/shorts/` address once and caches the result); there is a popup option to include them. Click a channel's badge in the popup to list the videos being counted.
+- YouTube changes its page markup from time to time. If tiles stop hiding, the selectors at the top of `content.js` (`TILE_SELECTOR`, `PROGRESS_SELECTOR`) are the place to look. The on-page button turns orange when it detects this. The Shorts and Releases switches rely on YouTube's English labels and on a few element names in `content.css`, so they are the most likely to need a tweak.
 - Videos you watched elsewhere only count once the extension has seen their progress. Import your Takeout `watch-history.json` to cover older history.
 - Extensions loaded unpacked don't sync between computers. Use **Export backup** and **Import** instead.
 
@@ -52,7 +54,7 @@ GNU General Public License v3.0. See [LICENSE](LICENSE).
 | `sort.js` | Channel sort logic shared by the page scripts and popup |
 | `popup.html` / `popup.js` | Toolbar popup: settings, channel list, backup |
 | `help.html` | Help page |
-| `background.js` | Opens the help page on first install |
+| `background.js` | Opens the help page on first install, handles the keyboard shortcut |
 | `icons/` | Toolbar and store icons |
 
 ## Compatibility

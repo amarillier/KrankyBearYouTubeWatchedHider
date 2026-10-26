@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <style>
     body { width: 300px; margin: 0; padding: 14px; font: 13px/1.4 system-ui, sans-serif; color: #222; }
-    h1 { font-size: 15px; margin: 0 0 12px; }
+    h1 { font-size: 15px; margin: 0; }
     label.row { display: flex; align-items: center; justify-content: space-between; margin: 10px 0; }
     input[type=range] { width: 100%; }
     .muted { color: #666; font-size: 12px; }
@@ -14,12 +14,19 @@
   </style>
 </head>
 <body>
+  <div style="display: flex; align-items: center; gap: 10px;">
+  <img src="icons/icon48.png" alt="KrankyBear Logo" style="width: 48px; height: 48px;">
   <h1>YouTube Watched Hider</h1>
+  </div>
+  <p class="muted" style="margin-bottom:0"><a href="#" id="help">How it works</a></p>
 
   <label class="row"><span>Hide watched videos</span><input type="checkbox" id="enabled"></label>
   <label class="row"><span>Show on-page toggle button</span><input type="checkbox" id="showButton"></label>
 
   <label class="row"><span>Show tracked channels on Home page</span><input type="checkbox" id="showStripOnHome"></label>
+  <label class="row"><span>Hide Shorts (shelves, tiles, tab)</span><input type="checkbox" id="hideShorts"></label>
+  <label class="row"><span>Hide channel Releases (tab, shelf)</span><input type="checkbox" id="hideReleases"></label>
+  <label class="row"><span>Count Shorts in channel totals</span><input type="checkbox" id="includeShorts"></label>
 
   <div>Count as watched at <b><span id="thresholdValue"></span>%</b> progress</div>
   <input type="range" id="threshold" min="1" max="100" step="1">
@@ -44,7 +51,6 @@
   </div>
   <input type="file" id="file" accept=".json,application/json" hidden>
   <div id="status" class="muted"></div>
-  <p class="muted" style="margin-bottom:0"><a href="#" id="help">How it works</a></p>
 
   <script src="sort.js"></script>
   <script src="popup.js"></script>

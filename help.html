@@ -24,7 +24,10 @@
 </head>
 <body>
 <main>
+  <div style="display: flex; align-items: center; gap: 10px;">
+  <img src="icons/icon128.png" alt="KrankyBear Logo" style="width: 128px; height: 128px;">
   <h1>YouTube Watched Hider</h1>
+  </div>
   <p class="lead">Hide what you've already watched, and keep a short list of the channels you actually follow.</p>
 
   <h2>Quick start</h2>
@@ -47,12 +50,26 @@
 
   <h2>Marking a video as watched</h2>
   <p>Hover over a thumbnail and click <b>&#10003; Watched</b>. The video is stored as fully watched and hides straight away if hiding is on. An <b>Undo</b> link appears for a few seconds. This is useful for videos YouTube shows as only 15&ndash;20% watched even though you finished them.</p>
+  <p>If a video was counted as watched by mistake, turn hiding off, hover over it and click <b>&#10007; Unwatch</b>. This overrides YouTube's own progress bar for that video until you play it again.</p>
+
+  <h2>Hiding Shorts and Releases</h2>
+  <p>Two optional switches in the popup:</p>
+  <ul>
+    <li><b>Hide Shorts</b> removes Shorts shelves, Shorts tiles, the <b>Shorts</b> channel tab and the Shorts entry in the side menu. It applies even when hiding of watched videos is off, but never on your History page.</li>
+    <li><b>Hide channel Releases</b> removes the <b>Releases</b> tab and the Releases shelf on channel pages.</li>
+  </ul>
+  <p>Tabs and shelves are found by their English label, so these two switches only work with YouTube set to English.</p>
+
+  <h2>Keyboard shortcut</h2>
+  <p>Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> to turn hiding of watched videos on or off. To change it, open <code>chrome://extensions/shortcuts</code>.</p>
 
   <h2>Tracked channels</h2>
   <p>Click <b>+ Track channel</b> on any channel page to add it, and click it again to remove it. Your normal YouTube subscriptions are not changed.</p>
   <p>On the Subscriptions page (and optionally the Home page) a strip appears at the top with one chip per tracked channel and the number of unwatched videos. Click a chip to open that channel's Videos tab, where hiding already applies. The &#8635; button refreshes the counts.</p>
   <p>The same list, with counts and links, is in the toolbar popup.</p>
   <div class="note"><b>About the counts:</b> they are based on each channel's 15 most recent uploads. A badge such as <code>15+</code> means all of those 15 are unwatched and there may be more. Counts refresh at most every 15 minutes.</div>
+  <p><b>Shorts:</b> a channel's feed mixes Shorts in with normal videos, but Shorts never appear on its Videos tab. So by default they are not counted. Tick <b>Count Shorts in channel totals</b> in the popup to include them.</p>
+  <p><b>Which videos are counted?</b> In the popup, click a channel's number badge to expand a list of the unwatched videos behind it, with titles, dates and links.</p>
 
   <h2>Sorting and ordering</h2>
   <p>In the popup, choose <b>Manual</b>, <b>A &ndash; Z</b>, <b>Z &ndash; A</b> or <b>Most unwatched</b>. The popup list and the YouTube strip both follow your choice. To set your own order, drag the &#9776; handle on a row. Dragging switches to Manual and keeps the order you see.</p>
@@ -63,8 +80,8 @@
 
   <h2>Troubleshooting</h2>
   <ul>
-    <li><b>Nothing hides:</b> check the toggle is on, then refresh the YouTube tab. YouTube changes its page layout from time to time, which can break the tile detection.</li>
-    <li><b>Counts look too high:</b> videos you watched elsewhere only count once the extension has seen their progress. Import Takeout, or open the channel page once.</li>
+    <li><b>Nothing hides:</b> check the toggle is on, then refresh the YouTube tab. YouTube changes its page layout from time to time, which can break the tile detection. If the bottom-left button turns orange and says it can't find videos, that is what has happened.</li>
+    <li><b>Counts look too high:</b> videos you watched elsewhere only count once the extension has seen their progress. Import Takeout, or open the channel page once. Click the channel's badge in the popup to see exactly which videos are counted. Live streams and premieres can also be counted even though they aren't on the Videos tab.</li>
     <li><b>The + button doesn't appear:</b> it shows only on a channel's own page. Give it a second after the page loads.</li>
     <li><b>After updating the extension:</b> reload it on <code>chrome://extensions</code> and refresh your YouTube tabs.</li>
   </ul>

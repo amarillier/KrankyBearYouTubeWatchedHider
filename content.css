@@ -1,4 +1,16 @@
-.kb-watched-hidden {
+.kb-watched-hidden,
+.kb-shorts-hidden,
+.kb-ui-hidden {
+  display: none !important;
+}
+
+/* Shorts shelves, and the Shorts entries in the sidebar menus. */
+html.kb-no-shorts ytd-reel-shelf-renderer,
+html.kb-no-shorts ytd-rich-section-renderer:has(ytd-reel-shelf-renderer),
+html.kb-no-shorts ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+html.kb-no-shorts ytd-rich-shelf-renderer[is-shorts],
+html.kb-no-shorts ytd-guide-entry-renderer:has(a[title="Shorts"]),
+html.kb-no-shorts ytd-mini-guide-entry-renderer[aria-label="Shorts"] {
   display: none !important;
 }
 
@@ -25,7 +37,7 @@
   background: rgba(200, 30, 30, 0.95);
 }
 
-.kb-tile.kb-can-mark:hover > .kb-mark {
+.kb-tile:hover > .kb-mark {
   display: block;
 }
 
@@ -74,6 +86,11 @@
 
 #kb-toggle.kb-on {
   background: rgba(200, 30, 30, 0.9);
+}
+
+#kb-toggle.kb-warn {
+  background: rgba(190, 120, 0, 0.95);
+  opacity: 1;
 }
 
 #kb-track {
